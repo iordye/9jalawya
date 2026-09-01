@@ -21,14 +21,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 import logging
 import time
+from src.utils.logging_config import get_logger, setup_logging
 
-# LOGGING
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # CONSTANTS
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent

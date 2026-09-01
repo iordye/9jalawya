@@ -10,14 +10,9 @@ import logging
 from sentence_transformers import SentenceTransformer
 from chromadb.utils import embedding_functions
 from tqdm import tqdm
+from src.utils.logging_config import get_logger, setup_logging
 
-# LOGGING
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # CONSTANTS
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -26,7 +21,7 @@ VECTORSTORE_DIR = PROJECT_ROOT / "vectorstore"
 VECTORSTORE_DIR.mkdir(parents=True, exist_ok=True)
 
 # Embedding Model Configuration
-EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
+EMBEDDING_MODEL_NAME = "models\\embedding_ml\\all-MiniLM-L6-v2"
 CHROMA_COLLECTION_NAME = "9jalawya_corpus"
 
 # Ingestion Batch Configuration

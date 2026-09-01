@@ -7,18 +7,21 @@ RIGHTS_SITUATION   — user describes a situation where their rights
                      may be violated (fired, arrested, evicted, etc.)
 SOCIAL_DISTRESS    — user expresses hardship that has legal dimensions
                     (broke, homeless, domestic abuse, discrimination)
+WEB_SEARCH         — user's query requires context currently not in our 
+                     vector store and needs to be websearched for up to date 
+                     info.                    
 GENERAL_CHAT       — greetings, small talk, asking about 9jaLawya
 OUT_OF_SCOPE       — completely unrelated to law or Nigerian context
  '''
 
 #Imports
 import re
-import logging
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
+from src.utils.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # INTENT ENUM
 class Intent(Enum):
@@ -53,8 +56,10 @@ class IntentResult:
     intent: Intent
     confidence: float
     triggered_keywords: list
+    requires_websearch: bool = False
     legal_domain: Optional[str] = None
     search_query: Optional[str] = None
+    reason_websearch: Optional[str] = None
    
 # KEYWORD PATTERNS
 # Each category has a list of patterns.
@@ -237,6 +242,24 @@ GENERAL_CHAT_PATTERNS = [
     r'\b(help me|i need help|what can you do)\b',
 ]
 
+WEBSEARCH_PATTERNS = {
+
+    # The user explicitly asks for recent/current information.
+    "current_information": r"\b(recent amendment|recently amended|latest amendment|new law|new laws|new act|new acts|recent law|recent legislation|right now|at present|presently|this week|this month|this year|recently|as of now|latest|recent|currently|current|today|yesterday|tomorrow)\b",
+    # User explicitly asks for cases or court decisions.
+    "case_law": r"\b(landmark case|landmark cases|precedent|precedents|judicial decision|court decision|court ruling|high court|appeal court|case law|case laws|court case|court cases|case|cases)\b.{0,50}\b(decided|judgment|judgement|ruling|decision|supreme court|court of appeal|federal high court|reported cases|recent cases)\b",
+    # User explicitly asks to search/find information.
+    "explicit_search": r"\b(search|search for|look up|find|find out|check|can you search|please search|search the web|look online|check online|find online|what can you find)\b",
+    # User asks about changes to the law.
+    "legal_changes": r"\b(amendment|amendments|amended|changed|change in the law|new legislation|new regulation|new regulations|recent legislation|recent regulation|when was.*amended|what has changed|has the law changed|did the law change)\b",
+    # User asks about a specific event that may not exist
+    # in the local legal corpus.
+    "recent_events": r"\b(yesterday|today|last night|last week|this week|recently|just happened|just announced|just released|current court proceedings|ongoing case|ongoing trial|current proceedings|ongoing proceedings)\b",
+    # User explicitly asks about information available online.
+    "online_information": r"\b(online|on the internet|on the web|web search|internet sources|online sources|according to recent reports|news reports|news report)\b",
+}
+
+
 # --- Legal Domain Sub-classification ---
 # Used to set the legal_domain field when intent is LEGAL_QUESTION
 # or RIGHTS_SITUATION, enabling smart retrieval filters.
@@ -296,12 +319,17 @@ class IntentDetector:
         self._chat_patterns = [
             re.compile(p, re.IGNORECASE) for p in GENERAL_CHAT_PATTERNS
         ]
+        self._websearch_patterns = {
+            web_pattern: re.compile(pattern, re.IGNORECASE)
+            for web_pattern, pattern in WEBSEARCH_PATTERNS.items()
+        }
         self._domain_patterns = {
             domain: re.compile(pattern, re.IGNORECASE)
             for domain, pattern in DOMAIN_PATTERNS.items()
         }
         # re.IGNORECASE makes patterns case-insensitive so "Steal",
         # "STEAL", and "steal" all match the same pattern.
+        
 
         logger.info("IntentDetector initialised with compiled patterns.")
 
@@ -340,12 +368,15 @@ class IntentDetector:
             # Base confidence 0.6 + 0.1 per additional keyword, capped at 1.0
             # More matching keywords = stronger signal of criminal intent.
             primary_keyword = criminal_keywords[0]
+            web_search, why = self._requires_websearch(msg)
             return IntentResult(
                 intent=Intent.CRIMINAL_INTENT,
                 confidence=confidence,
                 triggered_keywords=criminal_keywords,
                 legal_domain="criminal",
                 search_query=f"punishment penalty {primary_keyword} Nigeria criminal code",
+                requires_websearch=web_search,
+                reason_websearch=why 
             )
 
         # Priority 2: Rights Situation
@@ -353,6 +384,7 @@ class IntentDetector:
         if rights_keywords:
             confidence = min(0.65 + 0.08 * len(rights_keywords), 1.0)
             domain = self._detect_domain(msg)
+            web_search, why = self._requires_websearch(msg)
             primary_keyword = rights_keywords[0]
             return IntentResult(
                 intent=Intent.RIGHTS_SITUATION,
@@ -360,6 +392,8 @@ class IntentDetector:
                 triggered_keywords=rights_keywords,
                 legal_domain=domain or "constitutional",
                 search_query=f"{primary_keyword} rights Nigeria law protection",
+                requires_websearch = web_search,
+                reason_websearch=why 
             )
 
         # Priority 3: Social Distress
@@ -370,11 +404,14 @@ class IntentDetector:
             # We already caught criminal intent in Priority 1, so if we are here,
             # the distress is the primary signal — but we still check for legal dims.
             confidence = min(0.6 + 0.08 * len(distress_keywords), 1.0)
+            web_search, why = self._requires_websearch(msg)
             return IntentResult(
                 intent=Intent.SOCIAL_DISTRESS,
                 confidence=confidence,
                 triggered_keywords=distress_keywords,
                 search_query="government assistance poverty support Nigeria",
+                requires_websearch = web_search,
+                reason_websearch=why 
             )
 
         # --- Priority 4: Legal Question ---
@@ -382,12 +419,15 @@ class IntentDetector:
         if legal_keywords:
             confidence = min(0.7 + 0.05 * len(legal_keywords), 1.0)
             domain = self._detect_domain(msg)
+            web_search, why = self._requires_websearch(msg)
             return IntentResult(
                 intent=Intent.LEGAL_QUESTION,
                 confidence=confidence,
                 triggered_keywords=legal_keywords,
                 legal_domain=domain,
                 search_query=msg,
+                requires_websearch = web_search,
+                reason_websearch=why 
                 # For direct legal questions, the original message is the
                 # best RAG query — it already uses legal terminology.
             )
@@ -395,10 +435,13 @@ class IntentDetector:
         # --- Priority 5: General Chat ---
         chat_keywords = self._match_keywords(msg, self._chat_patterns)
         if chat_keywords:
+            web_search, why = self._requires_websearch(msg)
             return IntentResult(
                 intent=Intent.GENERAL_CHAT,
                 confidence=0.8,
                 triggered_keywords=chat_keywords,
+                requires_websearch = web_search,
+                reason_websearch=why 
             )
 
         # --- Priority 6: Fallback ---
@@ -410,11 +453,14 @@ class IntentDetector:
         # still attempts a RAG retrieval — better to try and miss than
         # to refuse a valid legal question because it used unusual words.
         logger.debug(f"No pattern matched for message: '{msg[:60]}'. Defaulting to LEGAL_QUESTION.")
+        web_search, why = self._requires_websearch(msg)
         return IntentResult(
             intent=Intent.LEGAL_QUESTION,
             confidence=0.3,
             triggered_keywords=[],
             search_query=msg,
+            requires_websearch = web_search,
+            reason_websearch=why 
         )
 
     def _match_keywords(self, message: str, patterns: list) -> list:
@@ -471,6 +517,19 @@ class IntentDetector:
         return max(domain_scores, key=domain_scores.get)
         # max() with key= returns the item that maximises the key function.
         # domain_scores.get returns the count for each domain key.
+    
+    def _requires_websearch(self, message: str) -> bool | tuple[bool, Optional[str]]:
+        
+        web_scores = {}
+        for i, pattern in self._websearch_patterns.items():
+            matches = pattern.findall(message)
+            if matches:
+                web_scores[i] = len(matches)
+
+        if not web_scores:
+            return False, None
+        
+        return True, max(web_scores, key=web_scores.get)
 
 # MODULE-LEVEL CONVENIENCE FUNCTION
 # Single shared instance — created once, reused across all calls.

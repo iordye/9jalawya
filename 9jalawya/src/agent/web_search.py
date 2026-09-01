@@ -1,12 +1,12 @@
 # src/agent/web_search.py
 
 # Imports
-import logging
 import time
 from dataclasses import dataclass
 from typing import List, Optional
+from src.utils.logging_config import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # CONSTANTS
 MAX_SEARCH_RESULTS = 4
@@ -201,8 +201,8 @@ class WebSearchTool:
                 results.append(WebSearchResult(
                     title=title,
                     url=url,
-                    snippet=snippet[:400],
-                    # [:400] caps snippet length — we don't need the full
+                    snippet=snippet[:450],
+                    # [:450] caps snippet length — we don't need the full
                     # page description, just enough for the LLM to understand
                     # what the resource offers.
                     source=source,

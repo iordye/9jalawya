@@ -1,26 +1,19 @@
 # src/retrieval/retriever.py
-# IMPORTS
 import time
-import logging
 from pathlib import Path
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 import chromadb
 from chromadb.utils import embedding_functions
-from sentence_transformers import SentenceTransformer
+from src.utils.logging_config import get_logger
 
-# LOGGING
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # CONSTANTS
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 VECTORSTORE_DIR = PROJECT_ROOT / "vectorstore"
-EMBEDDING_MODEL_NAME = "BAAI/bge-m3"
+EMBEDDING_MODEL_NAME = "models/embedding_ml/all-MiniLM-L6-v2"
+
 # Must match exactly the model used in ingestor.py.
 # If these differ, query vectors and document vectors live in different
 # mathematical spaces and similarity scores become meaningless.
@@ -270,17 +263,12 @@ class NaijaLawRetriever:
             # the vector store, the retriever is completely non-functional.
             # A loud crash with a clear message is better than silent failure.
 
-        # --- Load embedding model ---
-        logger.info(f"  Loading embedding model: {embedding_model}")
-        self.model = SentenceTransformer(embedding_model)
-        # Load the same model used during ingestion.
-        # Stored as self.model so all .retrieve() calls share one instance.
-
         # --- Connect to ChromaDB ---
         logger.info(f"  Connecting to ChromaDB: {vectorstore_dir}")
         self.client = chromadb.PersistentClient(path=str(vectorstore_dir))
 
         # Attach the same embedding function used during ingestion.
+        logger.info(f"  Loading embedding model: {embedding_model}")
         embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
             model_name=embedding_model
         )
@@ -403,10 +391,14 @@ class NaijaLawRetriever:
         results = self._parse_results(raw_results, similarity_threshold)
 
         elapsed = round(time.time() - start_time, 3)
-        logger.info(
+        if len(results) != 0:
+            logger.info(
             f"  Retrieved {len(results)} results "
             f"(above threshold {similarity_threshold}) in {elapsed}s"
-        )
+            )
+        else:
+            logger.info("Couldn't find relevant documents in the vector store.")
+            
 
         # Log a brief summary of top results for debugging.
         for i, r in enumerate(results[:3], 1):
@@ -492,8 +484,9 @@ class NaijaLawRetriever:
                 is_continuation=metadata.get("is_continuation", False),
                 chunk_id=metadata.get("chunk_id", ""),
             )
+            results.append(result)
 
-            CONTINUATION_PENALTY = 0.05
+        CONTINUATION_PENALTY = 0.05
 
         def sort_key(r: RetrievalResult) -> float:
             return r.similarity - (CONTINUATION_PENALTY if r.is_continuation else 0.0)
