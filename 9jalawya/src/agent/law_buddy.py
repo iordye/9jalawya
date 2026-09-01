@@ -337,9 +337,7 @@ class NijaLawyaAgent:
         Loads all components. This takes 30-60 seconds on first run
         due to model downloads. Subsequent runs are faster (cache).
         """
-        logger.info("="*60)
         logger.info("Initialising 9jaLawya...")
-        logger.info("="*60)
 
         # --- Load retriever ---
         logger.info("Loading retriever and vector store...")
@@ -581,10 +579,17 @@ class NijaLawyaAgent:
         domain = intent.legal_domain
 
         domain_to_doc = {
-            "criminal":       ["criminal_code_act"],
+            "criminal":       ["2015_Administration_of_Criminal_Justice_Act", "cybercrime", 
+                               "CRIMINAL PROCEDURE ACT", "CRIMINAL PROCEDURE (NORTHERN STATES) ACT", 
+                               "CRIMINAL JUSTICE (MISCELLANEOUS PROVISIONS) ACT", "criminal_code_act", 
+                               "criminal_procedure_act"],
             "labour":         ["labour_act"],
             "constitutional": ["constitution"],
             "electoral":      ["electoral_act"],
+            "family":         ["MARRIAGE ACT", "MATRIMONIAL CAUSES ACT""CHILD'S RIGHT ACT", 
+                               "BIRTHS, DEATHS, ETC. (COMPULSORY REGISTRATION) ACT"
+                               ],
+            "land":           ["LANDS (TITLE VESTING, ETC.) ACT", "LAND USE ACT"],
             "tax":            ["companies_income_tax_act", "personal_income_tax_act"],
         }
 

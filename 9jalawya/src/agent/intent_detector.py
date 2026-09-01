@@ -74,6 +74,8 @@ CRIMINAL_INTENT_PATTERNS = [
     r'\b(scam|fraud|forge|bribe|corrupt|blackmail|extort|419|yahoo)\b',
     # Drug-related
     r'\b(sell drugs|deal drugs|drug dealing|trafficking|smuggle)\b',
+    #sexually related 
+    r'\b(rape|force girl|harrasment|trafficking|smuggle|prostitution)\b'
     #burglary-related
     r'\b(self defense|threat|forced|entry|burglary|protection|house|)\b',
     # General criminal intent phrases
@@ -81,6 +83,7 @@ CRIMINAL_INTENT_PATTERNS = [
     r'\b(steal|rob|kill|hurt|scam|cheat|fraud)\b',
     # Pidgin variants
     r'\b(i wan|i dey think|i go)\b.{0,20}\b(thief|kill|rob|scam|collect by force)\b',
+    r'\b(|hack|cybercrime|digital crime|rape|sexual assault|domestic violence|human trafficking|smuggling|drug trafficking|arms dealing|statutory rape|stalking)\b'
 ]
 
 # --- Rights Situation Patterns ---
@@ -95,7 +98,10 @@ RIGHTS_SITUATION_PATTERNS = [
     r'\b(arrest|arrested|detain|detained|police|cell|lock.?up|bail)\b',
     r'\b(they arrest|dem arrest|police hold)\b',
     # Housing and property
-    r'\b(evict|evicted|landlord|lock.?out|throw out|house|property)\b',
+    r'\b(evict|evicted|eviction|landlord|tenant|tenancy|rent|arrears|quit notice)\b',
+    r'\b(lock.?out|force[d]? out|throw[n]? out|demolish|demolition)\b',
+    r'\b(rent increase|rent dispute|security deposit|house rent)\b',
+    r'\b(landlord|tenant).{0,40}\b(threaten|harass|evict|lock|enter|damage)\b',
     # Domestic and family
     r'\b(husband|wife|spouse|partner).{0,20}\b(beat|abuse|hit|threaten|force)\b',
     r'\b(domestic (violence|abuse)|sexual (assault|harassment))\b',
@@ -103,6 +109,23 @@ RIGHTS_SITUATION_PATTERNS = [
     r'\b(discriminat|harass|victimis|unfair treatment)\b',
     # Consumer rights
     r'\b(cheated|scammed|fake (product|goods)|refund|consumer)\b',
+    r'\b(arrest|arrested|detain|detained|held|lock.?up|cell|bail|custody)\b',
+    r'\b(police|officer|security).{0,40}\b(beat|hit|assault|torture|threaten|abuse|harass)\b',
+    r'\b(warrant|without warrant|illegal arrest|wrongful arrest|unlawful detention)\b',
+    r'\b(rights? (on|after|during) arrest|right to (lawyer|counsel|remain silent))\b',
+    r'\b(search(ed)?|seize[d]?|confiscat(ed|ion))\b',
+    r'\b(husband|wife|spouse|partner).{0,30}\b(beat|abuse|hit|threaten|force|rape|assault)\b',
+    r'\b(domestic (violence|abuse)|gender[- ]based violence|sexual (assault|abuse|harassment))\b',
+    r'\b(child abuse|child neglect|child marriage|forced marriage)\b',
+    r'\b(maintenance|child support|custody|guardianship|divorce)\b',
+    r'\b(forced marriage|forced to marry|marriage without consent)\b',
+    r'\b(fundamental human rights|fundamental rights|constitutional rights)\b',
+r'\b(right to life|right to dignity|right to privacy)\b',
+r'\b(freedom of expression|freedom of speech|freedom of religion)\b',
+r'\b(freedom of association|freedom of assembly|freedom of movement)\b',
+r'\b(right to fair hearing|fair hearing)\b',
+r'\b(school|student|teacher|university|education).{0,40}\b(expel|suspend|discriminat|harass|abuse)\b',
+r'\b(education rights|student rights|school fees dispute)\b',
 ]
 
 # --- Social Distress Patterns ---
@@ -111,6 +134,7 @@ RIGHTS_SITUATION_PATTERNS = [
 SOCIAL_DISTRESS_PATTERNS = [
     # Financial hardship
     r'\b(broke|no money|poor|poverty|hungry|starving|cannot afford|can\'t afford)\b',
+    r'\b(i am|i\'m|i have|we are|we\'re).{0,30}\b(broke|hungry|starving|homeless|unemployed)\b'
     r'\b(no food|no job|unemployed|jobless|retrench)\b',
     # Homelessness
     r'\b(homeless|nowhere to (go|sleep|stay)|living on the street)\b',
@@ -120,25 +144,87 @@ SOCIAL_DISTRESS_PATTERNS = [
     r'\b(abandoned|my (children|kids|family) (are|is) (starving|suffering))\b',
     # Pidgin distress
     r'\b(i don finish|e don do me|i no get anything|my life don scatter)\b',
+    r'\b(i no get money|i no get work|i no get food)\b',
+r'\b(no be say i get money)\b',
+r'\b(i dey suffer|we dey suffer)\b',
+r'\b(i don tire|i don tire for everything)\b',
+r'\b(e don hard|things don hard)\b',
+r'\b(money no dey|food no dey)\b',
+r'\b(i no know wetin to do)\b',
+r'\b(i don lose everything)\b',
+r'\b(my family dey suffer)\b',
 ]
 
 # --- Legal Question Patterns ---
 # Direct questions about law, rights, provisions, penalties, procedures.
 LEGAL_QUESTION_PATTERNS = [
-    # Question words + law
-    r'\b(what|how|when|where|who|can|is it|does).{0,30}\b(law|legal|illegal|right|act|section|constitution|crime|penalty|punishment|offence)\b',
-    # "what does the law say"
-    r'\bwhat does the law\b',
-    # Rights questions
-    r'\b(what are|do i have).{0,20}\b(rights|entitlement|protection)\b',
-    # Penalty questions
-    r'\b(punishment|penalty|sentence|fine|jail|prison).{0,20}\b(for|of|if)\b',
-    # Process questions
-    r'\b(how (do i|can i|to)|what (is|are) the (process|procedure|steps))\b',
-    # Specific acts
-    r'\b(labour act|criminal code|constitution|electoral act|CITA|PITA|companies act)\b',
-    # Pidgin legal questions
-    r'\b(wetin be|how e be|dem fit).{0,20}\b(law|right|crime|offence|court)\b',
+
+    # ---------------------------------------------------------
+    # General legal questions
+    # ---------------------------------------------------------
+    r'\b(what|how|when|where|who|can|could|may|is|are|does|do).{0,50}\b'
+    r'(law|legal|illegal|lawful|unlawful|right|rights|act|section|constitution|crime|offence|offense|penalty|punishment)\b',
+
+    # "What does the law say?"
+    r'\bwhat does (the|nigerian) law\b',
+    r'\bwhat does the law say\b',
+    r'\bwhat does the constitution say\b',
+
+    # ---------------------------------------------------------
+    # Rights
+    # ---------------------------------------------------------
+    r'\b(what are|what is|do i have|does? (a person|someone|i)).{0,30}\b'
+    r'(rights?|entitlement|protection|freedom)\b',
+
+    r'\b(what are my|what is my|do i have any).{0,30}\b'
+    r'(rights?|legal rights?|protection)\b',
+
+    # ---------------------------------------------------------
+    # Legality
+    # ---------------------------------------------------------
+    r'\b(is|are|was|were|can|may).{0,40}\b'
+    r'(legal|illegal|lawful|unlawful|allowed|permitted|against the law)\b',
+
+    # ---------------------------------------------------------
+    # Penalties / punishment
+    # ---------------------------------------------------------
+    r'\b(what is the|what are the|how much is the|how long is the).{0,30}\b'
+    r'(penalty|punishment|sentence|fine|jail|prison|punishment)\b',
+
+    r'\b(what happens if|what will happen if).{0,50}\b'
+    r'(break|violate|breach|contravene|disobey)\b',
+
+    # ---------------------------------------------------------
+    # Legal procedure
+    # ---------------------------------------------------------
+    r'\b(how (do i|can i|would i|to)|what (is|are) the).{0,40}\b'
+    r'(process|procedure|steps?|requirements?|legal process)\b',
+
+    r'\b(where|how).{0,40}\b'
+    r'(file|report|sue|appeal|complain|apply|register|challenge)\b',
+
+    # ---------------------------------------------------------
+    # Courts / lawyers
+    # ---------------------------------------------------------
+    r'\b(court|judge|lawyer|solicitor|barrister|legal aid).{0,40}\b'
+    r'(how|where|can|should|need|do i|find|file|appeal)\b',
+
+    # ---------------------------------------------------------
+    # Nigerian legislation
+    # ---------------------------------------------------------
+    r'\b(labour act|criminal code|penal code|constitution|'
+    r'electoral act|companies and allied matters act|CAMA|'
+    r'companies act|PITA|personal income tax act|'
+    r'land use act|cybercrimes act|'
+    r'NDPA|Nigeria Data Protection Act)\b',
+
+    # ---------------------------------------------------------
+    # Pidgin
+    # ---------------------------------------------------------
+    r'\b(wetin be|wetin law talk|wetin the law say|'
+    r'how e be|dem fit|person fit|i fit|'
+    r'wetin my right|wetin be my right).{0,30}\b'
+    r'(law|right|crime|offence|court|punishment)\b',
 ]
 
 # --- General Chat Patterns ---
@@ -155,12 +241,13 @@ GENERAL_CHAT_PATTERNS = [
 # Used to set the legal_domain field when intent is LEGAL_QUESTION
 # or RIGHTS_SITUATION, enabling smart retrieval filters.
 DOMAIN_PATTERNS = {
-    "criminal":      r'\b(crime|criminal|offence|theft|murder|fraud|assault|sentence|prison|police|arrest)\b',
+    "criminal":      r'\b(crime|criminal|offence|theft|murder|fraud|assault|sentence|prison|police|arrest|hack|cybercrime|digital crime|rape|sexual assault|domestic violence|human trafficking|smuggling|drug trafficking|arms dealing|statutory rape|stalking)\b',
     "labour":        r'\b(employ|work|job|salary|wages|dismiss|fire|sack|overtime|leave|contract of service)\b',
     "constitutional":r'\b(right|freedom|constitution|fundamental|citizen|government|president|governor|state)\b',
     "electoral":     r'\b(election|vote|voting|inec|candidate|party|ballot|result|rigging)\b',
-    "tax":           r'\b(tax|income tax|CITA|PITA|FIRS|VAT|assessment|revenue)\b',
-    "family":        r'\b(marriage|divorce|child|custody|inheritance|will|estate|domestic)\b',
+    "tax":           r'\b(tax|income tax|CITA|PITA|FIRS|VAT|assessment|revenue|PAYE|company tax)\b',
+    "family":        r'\b(marriage|divorce|child|custody|inheritance|will|estate|domestic|mother|father|son|daughter|parent)\b',
+    "land":          r'\b(land|property|title|deed|boundary|survey|estate|ownership|landlord|tenant)\b',
 }
 
 # --- Search Query Templates ---
